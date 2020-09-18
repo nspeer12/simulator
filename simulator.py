@@ -10,7 +10,7 @@ np.printoptions(precision=3, supress=True)
 
 
 class Simulator:
-    def __init__(self, n=100, dim=2):
+    def __init__(self, n=300, dim=2):
         self.n = n
         self.dim = dim
         self.size = tuple([n for i in range(dim)])
@@ -54,12 +54,28 @@ class Simulator:
         i = math.floor(self.n/2)
         self.matrix[i][i] = 1
 
-    def shift(self):
-        self.matrix -= np.roll(self.matrix, 1, axis=0)
-        self.matrix -= np.roll(self.matrix, 1, axis=1)
-        self.matrix += np.roll(self.matrix, -1, axis=0)
-        self.matrix += np.roll(self.matrix, -1, axis=1)
+    def flower_0(self):
+        next = np.copy(self.matrix)
+        next += np.roll(self.matrix, 1, axis=0)
+        next += np.roll(self.matrix, 1, axis=1)
+        next += np.roll(self.matrix, -1, axis=0)
+        next += np.roll(self.matrix, -1, axis=1)
+        #next += np.roll(self.matrix, -1, axis=(0,1))
+        #next += np.roll(self.matrix, 1, axis=(0,1))
 
-        self.matrix %= 255
+        self.matrix = next
+        self.matrix %= 4
+        return self.matrix
 
-        self.matrix += self.matrix.T
+    def flower(self):
+        next = np.copy(self.matrix)
+        next += np.roll(self.matrix, 1, axis=0) % 2
+        next += np.roll(self.matrix, 1, axis=1) % 2
+        next += np.roll(self.matrix, -1, axis=0) % 2
+        next += np.roll(self.matrix, -1, axis=1) % 2
+        #next += np.roll(self.matrix, -1, axis=(0,1))
+        #next += np.roll(self.matrix, 1, axis=(0,1))
+
+        self.matrix = next
+        self.matrix %= 30
+        return self.matrix

@@ -17,9 +17,10 @@ def game_of_life():
 
 
 def update(i, show=False, save=True):
-    sim.shift()
+    sim.flower()
 
-    frame = ax.imshow(sim.matrix)
+    frame = ax.matshow(sim.matrix)
+    fig.canvas.flush_events()
 
     if save:
         fig.savefig(img_dir + "matrix_" + str(i) + ".png")
@@ -28,9 +29,10 @@ def update(i, show=False, save=True):
 if __name__=="__main__":
     sim = Simulator(n=240)
     sim.seed_center()
-    fig, ax = plt.subplots(figsize=(5,5))
-    frame = ax.imshow(sim.matrix)
-    animation = FuncAnimation(fig, update, interval=100)
+    fig, ax = plt.subplots(figsize=(10,10))
+    plt.axis("off")
+    frame = ax.matshow(sim.matrix)
+    animation = FuncAnimation(fig, update, interval=500, save_count=50)
 
     plt.show()
     #game_of_life()
