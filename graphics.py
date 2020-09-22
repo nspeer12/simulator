@@ -1,6 +1,6 @@
 import tkinter as tk
 import time
-
+from ursina import *
 
 class GraphicsFrame(tk.Frame):
     def __init__(self, master=None):
@@ -42,18 +42,24 @@ class GraphicsCanvas(tk.Canvas):
         for i in range(100):
             for shape in self.shapes:
                 self.move(shape, 5, 5)
-                time.sleep(0.1)
+                time.sleep(0.5)
 
 
 
 class Particle():
-    def __init__(self, canvas, x1, y1, x2, y2, color="blue"):
+    def __init__(self, canvas, x1, y1, x2, y2, dy, dx, color="blue"):
         self.canvas = canvas
         self.particle = self.canvas.create_line(x1, y1, x2, y2, fill="blue")
         self.x1 = x1
         self.x2 = x2
+        self.x = (x2-x1)/2
         self.y1 = y1
         self.y2 = y2
+        self.y = (y2-y2)/2
+
+        self.dy = dy
+        self.dx = dx
+
 
     def move(self, dx, dy):
         self.x1 += dx
@@ -71,10 +77,29 @@ class Particle():
 
 
     def animation(self):
-        for i in range(100):
-            self.canvas.move(self.particle, -10, -10)
+        frames = 10000
+        i = 0
+        while (i < frames):
+            if (self.x1 > self.canvas.width or self.x1 <= 0):
+                print("x hit")
+                self.dx = -self.dx
+                self.dy = -self.dy
+
+            elif (self.y1 > self.canvas.height or self.y1 <= 0):
+                print("y hit")
+                self.dy = -self.dy
+                self.dx = -self.dx
+
+            print(self.x, self.y)
+            self.move(self.dx, self.dy)
+            self.canvas.move(self.particle, self.dx, self.dy)
             root.update()
-            time.sleep(0.1)
+            time.sleep(1/60)
+
+            i += 1
+
+
+
 
 
 if __name__== "__main__":
@@ -82,8 +107,10 @@ if __name__== "__main__":
     app = GraphicsCanvas(master=root, height=1000, width=1000)
     #app.draw_rect(500, 500, 600, 600)
     #app.animation()
-    electron = Particle(app, 500, 500, 600, 600)
-    electron.animation()
+    for i in range(100):
+        electron = Particle(app, 500, 500, 600, 600, 5, 10)
+        electron.animation()
+
     e2 = Particle(app, 800, 500, 300, 600)
     e2.animation()
 
