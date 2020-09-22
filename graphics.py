@@ -1,6 +1,8 @@
 import tkinter as tk
 import time
 from ursina import *
+import random
+
 
 class GraphicsFrame(tk.Frame):
     def __init__(self, master=None):
@@ -20,8 +22,8 @@ class GraphicsFrame(tk.Frame):
 
 
 class GraphicsCanvas(tk.Canvas):
-    def __init__(self, master=None, height=80, width=80):
-        super().__init__(master, width=width, height=height)
+    def __init__(self, master=None, height=80, width=80, bg="black"):
+        super().__init__(master, width=width, height=height, bg=bg)
         self.width = width
         self.height = height
         self.master = master
@@ -47,72 +49,87 @@ class GraphicsCanvas(tk.Canvas):
 
 
 class Particle():
-    def __init__(self, canvas, x1, y1, x2, y2, dy, dx, color="blue"):
+    def __init__(self, canvas, x, y, r, dy, dx, color="blue"):
         self.canvas = canvas
-        self.particle = self.canvas.create_line(x1, y1, x2, y2, fill="blue")
-        self.x1 = x1
-        self.x2 = x2
-        self.x = (x2-x1)/2
-        self.y1 = y1
-        self.y2 = y2
-        self.y = (y2-y2)/2
-
+        self.particle = self.canvas.create_oval(x-r, y-r, x+r, y+r, fill=color)
+        self.x = x
+        self.y = y
+        self.r = r
         self.dy = dy
         self.dx = dx
 
 
     def move(self, dx, dy):
-        self.x1 += dx
-        self.x2 += dx
-        self.y1 += dy
-        self.y2 += dy
-
+        self.x += dx
+        self.y += dy
         self.canvas.move(self.particle, dx, dy)
 
     def scale(self, factor=1.1):
-        self.x1 *= factor
-        self.y1 *= factor
-        self.x2 *= factor
-        self.y2 *= factor
+        self.x *= factor
+        self.y *= factor
 
 
-    def animation(self):
+    def bounce(self):
         frames = 10000
         i = 0
-        while (i < frames):
-            if (self.x1 > self.canvas.width or self.x1 <= 0):
-                print("x hit")
-                self.dx = -self.dx
-                self.dy = -self.dy
-
-            elif (self.y1 > self.canvas.height or self.y1 <= 0):
-                print("y hit")
-                self.dy = -self.dy
+        offset = 300
+        if (self.x >= self.canvas.width-offset):
+            if (self.dx > 0):
                 self.dx = -self.dx
 
-            print(self.x, self.y)
             self.move(self.dx, self.dy)
-            self.canvas.move(self.particle, self.dx, self.dy)
-            root.update()
-            time.sleep(1/60)
 
-            i += 1
+        if (self.x <= 0 + offset):
+            if (self.dx < 0):
+                self.dx = -self.dx
+
+        if (self.y > self.canvas.height - offset):
+            if (self.dy > 0):
+                self.dy = -self.dy
+
+        if (self.y < 0 + offset):
+            if (self.dy < 0):
+                self.dy = -self.dy
+
+            self.move(self.dx, self.dy)
+
+        self.dy += 2
+        self.move(self.dx, self.dy)
 
 
+    def animation_step(self):
+        self.canvas.move(self.particle, self.dx, self.dy)
+        print(self.canvas.height, self.y)
 
 
 
 if __name__== "__main__":
     root = tk.Tk()
-    app = GraphicsCanvas(master=root, height=1000, width=1000)
+    height = 1920
+    width = 1920
+    framerate=60
+    app = GraphicsCanvas(master=root, height=height, width=width, bg="black")
     #app.draw_rect(500, 500, 600, 600)
     #app.animation()
-    for i in range(100):
-        electron = Particle(app, 500, 500, 600, 600, 5, 10)
-        electron.animation()
+    color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
 
-    e2 = Particle(app, 800, 500, 300, 600)
-    e2.animation()
+    particles = []
+    for i in range(10000):
+        xi = random.randint(0, width)
+        yi = random.randint(0, height)
+        dxi = random.randint(-10, 10)
+        dyi = random.randint(-10, 10)
+        r = random.randint(0,5)
 
+        electron = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color))
+        particles.append(electron)
+
+    while True:
+        for particle in particles:
+            particle.bounce()
+            particle.animation_step()
+
+        root.update()
+        time.sleep(1/framerate)
     #app.animation()
     app.mainloop()
