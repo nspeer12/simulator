@@ -3,6 +3,7 @@ import time
 from ursina import *
 import random
 
+random.seed(1012520798)
 
 class GraphicsFrame(tk.Frame):
     def __init__(self, master=None):
@@ -44,7 +45,6 @@ class GraphicsCanvas(tk.Canvas):
         for i in range(100):
             for shape in self.shapes:
                 self.move(shape, 5, 5)
-                time.sleep(0.5)
 
 
 
@@ -72,53 +72,60 @@ class Particle():
     def bounce(self):
         frames = 10000
         i = 0
-        offset = 300
-        if (self.x >= self.canvas.width-offset):
+        offset = 250
+
+        self.move(self.dx, self.dy)
+
+        if (self.x >= 3*self.canvas.width/4):
             if (self.dx > 0):
                 self.dx = -self.dx
 
             self.move(self.dx, self.dy)
 
-        if (self.x <= 0 + offset):
+        if (self.x < self.canvas.width/4):
             if (self.dx < 0):
                 self.dx = -self.dx
 
-        if (self.y > self.canvas.height - offset):
+        if (self.y > 3*self.canvas.height/4):
             if (self.dy > 0):
                 self.dy = -self.dy
 
-        if (self.y < 0 + offset):
+        if (self.y < self.canvas.height/4):
             if (self.dy < 0):
                 self.dy = -self.dy
 
             self.move(self.dx, self.dy)
 
-        self.dy += 2
-        self.move(self.dx, self.dy)
+        #self.dy += 2
+
 
 
     def animation_step(self):
         self.canvas.move(self.particle, self.dx, self.dy)
-        print(self.canvas.height, self.y)
 
 
 
 if __name__== "__main__":
+
     root = tk.Tk()
-    height = 1920
-    width = 1920
+    height = 1000
+    width = 1000
     framerate=60
+
     app = GraphicsCanvas(master=root, height=height, width=width, bg="black")
     #app.draw_rect(500, 500, 600, 600)
     #app.animation()
     color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
 
     particles = []
-    for i in range(10000):
-        xi = random.randint(0, width)
-        yi = random.randint(0, height)
-        dxi = random.randint(-10, 10)
-        dyi = random.randint(-10, 10)
+
+    for i in range(100):
+        #xi = random.randint(0, width)
+        #yi = random.randint(0, height)
+        xi = width / 2
+        yi = width / 2
+        dxi = random.randint(-10, 10) * random.random()
+        dyi = random.randint(-10, 10) * random.random()
         r = random.randint(0,5)
 
         electron = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color))
@@ -126,8 +133,9 @@ if __name__== "__main__":
 
     while True:
         for particle in particles:
-            particle.bounce()
             particle.animation_step()
+            particle.bounce()
+
 
         root.update()
         time.sleep(1/framerate)
