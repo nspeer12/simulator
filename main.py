@@ -12,6 +12,7 @@ from datetime import datetime
 from random import random
 from graphics import *
 from particle import *
+import threading
 
 random.seed(datetime.now())
 
@@ -36,8 +37,6 @@ def animation():
     animation = FuncAnimation(fig, update, interval=500, save_count=50)
     plt.show()
 
-
-
 def update_history(i, show=False, save=False):
     matrix = sim.history[i]
 
@@ -50,7 +49,6 @@ def update_history(i, show=False, save=False):
 
     return im
 
-
 def animate_history(sim, frames):
     animation = FuncAnimation(fig, update_history, interval=500, save_count=50, frames=frames)
 
@@ -58,7 +56,6 @@ def animate_history(sim, frames):
     writer = Writer(fps=15, bitrate=1800)
     animation.save("game_of_life.mp4", writer=writer)
     plt.show()
-
 
 def flower_0(sim):
     next = np.copy(sim.matrix)
@@ -84,7 +81,6 @@ def snowflake(sim):
     next %= 30
 
     return next
-
 
 def game_of_life(sim):
 
@@ -142,9 +138,7 @@ def game_of_life(sim):
 
     return matrix
 
-
 def bounce():
-    root = tk.Tk()
     height = 1000
     width = 1000
     framerate=60
@@ -176,15 +170,10 @@ def bounce():
 
     app.mainloop()
 
-def collider():
-    engine = Engine(framerate=15)
-    print(engine.width)
+def collider(particles):
     color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
     k = 2
-    #engine.window.bind('<Motion>', click)
-    #engine.window.mainloop()
 
-    particles = []
 
     for i in range(0):
         xi = (engine.width / 2 + random.randint(-100,100))
@@ -225,49 +214,75 @@ def collider():
             particles.append(ball)
 
 
+        particles = coulomb(particles)
+
         for particle in particles:
             particle.constrain()
-            #particle.trail()
 
-            for p in particles:
-                if p != particle:
-                    # hashtag trig
-                    delta_y = particle.y - p.y
-                    delta_x = particle.x - p.x
-                    radius = math.sqrt(delta_x**2 + delta_y**2)
-
-                    # scale factor
-                    alpha = 0.00000001
-
-                    # apply coulomb's law
-                    if radius != 0:
-
-                        if delta_x != 0:
-                            theta = math.atan(delta_y/delta_x)
-
-                        force = (particle.charge * p.charge * k) / (radius*alpha)**2
-                        a_x = (force * math.cos(theta)) / particle.mass
-                        a_y = (force * math.sin(theta)) / particle.mass
-                        particle.dx += a_x
-                        particle.dy += a_y
-                    else:
-                        particle.dx = 0
-                        particle.dy = 0
-
-            for particle in particles:
-                particle.step()
+        for particle in particles:
+            particle.step()
 
         engine.update()
 
-
 def right_click(event):
-    particles.append(Particle(engine.canvas, event.x, event.y, 3, 0, 0, color="blue", charge=-1e9, mass=1e20))
+    particles.append(Particle(engine.canvas, event.x, event.y, 10, 0, 0, color="blue", charge=-1e9, mass=1e20))
     engine.update()
 
 def left_click(event):
-    particles.append(Particle(engine.canvas, event.x, event.y, 3, 0, 0, color="red", charge=1e9, mass=1e20))
+    particles.append(Particle(engine.canvas, event.x, event.y, 10, 0, 0, color="red", charge=1e9, mass=1e20))
     engine.update()
 
+
+def coulomb_helper(p, j):
+    k = 1e5
+
+    delta_y = j.y - p.y
+    delta_x = j.x - p.x
+    radius = math.sqrt(delta_x**2 + delta_y**2)
+
+    # apply coulomb's law
+    if radius != 0:
+        if delta_x == 0:
+            theta = 0
+        else:
+            theta = math.atan(delta_y/delta_x)
+
+        force = (j.charge * p.charge * k) / radius**2
+
+        #if p in visited:
+        #    force = -force
+
+        a_x = (force * math.cos(theta)) / p.mass
+        a_y = (force * math.sin(theta)) / p.mass
+
+
+        # inverse angle
+        theta = theta - math.radians(0.5)
+
+        if (p.charge * j.charge) > 0:
+            force *= -1
+
+        a_x = (force * math.cos(theta)) / j.mass
+        a_y = (force * math.sin(theta)) / j.mass
+
+        # handle positive and negative charges
+        j.dx += a_x
+        j.dy += a_y
+        p.dx += a_x
+        p.dy += a_y
+
+        '''
+        if (p.charge * j.charge) < 0:
+            j.dx -= a_x
+            j.dy -= a_y
+            p.dx += a_x
+            p.dy += a_y
+        else:
+            j.dx += a_x
+            j.dy += a_y
+            p.dx -= a_x
+            p.dy -= a_y
+        '''
 
 def coulomb(particles):
     k = 1e5
@@ -280,53 +295,37 @@ def coulomb(particles):
 
             if p != particle and (particle, p) not in visited and (p, particle) not in visited:
                 visited.append((particle, p))
-                # hashtag trig
-                delta_y = particle.y - p.y
-                delta_x = particle.x - p.x
-                radius = math.sqrt(delta_x**2 + delta_y**2)
 
-                # apply coulomb's law
-                if radius != 0:
-                    if delta_x == 0:
-                        theta = 0
-                    else:
-                        theta = math.atan(delta_y/delta_x)
+                # lfgi
+                threads = []
+                for i in range(num_threads):
+                    threads.append(threading.Thread(target=coulomb_helper, args=(particle, p)))
 
-                    force = (particle.charge * p.charge * k) / radius**2
-
-                    #if p in visited:
-                    #    force = -force
-
-                    a_x = (force * math.cos(theta)) / particle.mass
-                    a_y = (force * math.sin(theta)) / particle.mass
-
-
-                    # inverse angle
-                    theta = theta - math.radians(1)
-
-                    a_x = (force * math.cos(theta)) / p.mass
-                    a_y = (force * math.sin(theta)) / p.mass
-
-                    # handle positive and negative charges
-
-                    # negative
-                    if (p.charge * particle.charge) < 0:
-                        p.dx += a_x
-                        p.dy += a_y
-                        particle.dx -= a_x
-                        particle.dy -= a_y
-                    else:
-                        p.dx += a_x
-                        p.dy += a_y
-                        particle.dx -= a_x
-                        particle.dy -= a_y
-
-
-                else:
-                    particle.dx = 0
-                    particle.dy = 0
+                for t in threads:
+                    t.start()
 
         visited.append(particle)
+
+    return particles
+
+
+def collision(particles):
+    visited = []
+
+    for p in particles:
+        for j in particles:
+            if p != j and (j, p) not in visited and (p, j) not in visited:
+                visited.append((j, p))
+                # hashtag trig
+                delta_y = j.y - p.y
+                delta_x = j.x - p.x
+                radius = math.sqrt(delta_x**2 + delta_y**2)
+
+                if radius <= 5:
+                    print("BOOM")
+
+                    #particles.remove(p)
+                    #particles.remove(j)
 
     return particles
 
@@ -375,17 +374,18 @@ def test(particles):
 
     engine.update()
 
-    #electron = Particle(engine.canvas, 500, 100, 10, 0, 1, color="blue", charge=-1e9, mass=1e20)
-    #particles.append(electron)
+    electron = Particle(engine.canvas, 500, 100, 10, 0, 1, color="blue", charge=-1e9, mass=1e20)
+    particles.append(electron)
 
-    #proton = Particle(engine.canvas, 520, 150, 10, 0, 0, color="red", charge=1e9, mass=1e20)
-    #particles.append(proton)
+    proton = Particle(engine.canvas, 520, 150, 10, 0, 0, color="red", charge=1e9, mass=1e20)
+    particles.append(proton)
 
     while True:
         particles = coulomb(particles)
-
+        #particles= collision(particles)
         for particle in particles:
             particle.step()
+            #particle.trail()
 
         engine.update()
 
@@ -396,5 +396,6 @@ if __name__=="__main__":
     engine.window.bind("<Button-3>", left_click)
     engine.canvas.pack()
 
+    num_threads = 16
     particles = []
     test(particles)

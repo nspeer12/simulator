@@ -26,8 +26,11 @@ class Particle():
         self.x *= factor
         self.y *= factor
 
+    def delete(self):
+        self.canvas.delete(self.particle)
+        
     def trail(self):
-        if len(self.light_trail) > 20:
+        if len(self.light_trail) > 10:
             self.canvas.delete(self.light_trail.pop(0))
 
         self.light_trail.append(self.canvas.create_line(self.prev_x, self.prev_y, self.x, self.y, fill=self.color))
