@@ -4,9 +4,21 @@ from ursina import *
 import random
 import math
 from datetime import datetime
-
+from particle import *
 random.seed(datetime.now())
 
+
+class Engine():
+    def __init__(self, height=1080, width=1920, framerate=60):
+        self.window = tk.Tk()
+        self.height = height
+        self.width = width
+        self.framerate = framerate
+        self.canvas = GraphicsCanvas(master=self.window, height=height, width=width, bg="black")
+
+    def update(self):
+        self.window.update()
+        time.sleep(1/self.framerate)
 
 class GraphicsCanvas(tk.Canvas):
     def __init__(self, master=None, height=80, width=80, bg="black"):
@@ -31,88 +43,6 @@ class GraphicsCanvas(tk.Canvas):
         for i in range(100):
             for shape in self.shapes:
                 self.move(shape, 5, 5)
-
-
-
-class Particle():
-    def __init__(self, canvas, x, y, r, dy, dx, color="blue", charge=0, mass=10):
-        self.canvas = canvas
-        self.particle = self.canvas.create_oval(x-r, y-r, x+r, y+r, fill=color)
-        self.x = x
-        self.y = y
-        self.r = r
-        self.dy = dy
-        self.dx = dx
-        self.charge=charge
-        self.mass = mass
-        self.color = color
-        self.prev_x = x
-        self.prev_y = y
-
-
-    def move(self, dx, dy):
-        self.prev_x = self.x
-        self.prev_y = self.y
-        self.x += dx
-        self.y += dy
-        self.canvas.move(self.particle, dx, dy)
-
-    def scale(self, factor=1.1):
-        self.x *= factor
-        self.y *= factor
-
-    def trail(self):
-        self.canvas.create_line(self.prev_x, self.prev_y, self.x, self.y, fill=self.color)
-
-    def bounce(self):
-
-        if (self.x >= 3*self.canvas.width/4):
-            if (self.dx > 0):
-                self.dx = -self.dx
-
-            self.move(self.dx, self.dy)
-
-        if (self.x < self.canvas.width/4):
-            if (self.dx < 0):
-                self.dx = -self.dx
-
-        if (self.y > 3*self.canvas.height/4):
-            if (self.dy > 0):
-                self.dy = -self.dy
-
-        if (self.y < self.canvas.height/4):
-            if (self.dy < 0):
-                self.dy = -self.dy
-
-
-        self.move(self.dx, self.dy)
-
-        self.dy += 0.2
-
-
-    def constrain(self):
-        self.move(self.dx, self.dy)
-
-        if (self.x >= 3*self.canvas.width/4):
-            if (self.dx > 0):
-                self.dx = -self.dx
-
-        if (self.x < self.canvas.width/4):
-            if (self.dx < 0):
-                self.dx = -self.dx
-
-        if (self.y > 3*self.canvas.height/4):
-            if (self.dy > 0):
-                self.dy = -self.dy
-
-        if (self.y < self.canvas.height/4):
-            if (self.dy < 0):
-                self.dy = -self.dy
-
-
-
-    def animation_step(self):
-        self.canvas.move(self.particle, self.dx, self.dy)
 
 
 
@@ -141,10 +71,10 @@ if __name__== "__main__":
         r = random.randint(0,5)
 
         if i % 2 == 0:
-            electron = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color), charge=-1.6)
+            electron = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color), charge=-10)
             particles.append(electron)
         else:
-            protom = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color), charge=1.6)
+            protom = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color), charge=10)
             particles.append(proton)
 
     while True:
@@ -152,8 +82,37 @@ if __name__== "__main__":
             particle.animation_step()
             particle.bounce()
 
+            if particle.x > width or particle.x < 0 or particle.y > height or particle.y < 0:
+                particles.remove(particle)
+
+            for p in particles:
+                if p != particle:
+                    # hashtag trig
+                    delta_y = particle.y - p.y
+                    delta_x = particle.x - p.x
+                    radius = math.sqrt(delta_x**2 + delta_y**2)
+
+                    # scale factor
+                    alpha = 0.01
+
+                    # apply coulomb's law
+                    if radius != 0:
+
+                        if delta_x != 0:
+                            theta = math.atan(delta_y/delta_x)
+
+                        force = (particle.charge * p.charge * k) / (radius*alpha)**2
+                        a_x = (force * math.cos(theta)) / particle.mass
+                        a_y = (force * math.sin(theta)) / particle.mass
+                        particle.dx += a_x
+                        particle.dy += a_y
+                    else:
+                        particle.dx = 0
+                        particle.dy = 0
+
 
         root.update()
         time.sleep(1/framerate)
+
     #app.animation()
     app.mainloop()
