@@ -15,6 +15,7 @@ class Simulator:
         self.dim = dim
         self.size = tuple([n for i in range(dim)])
         self.matrix = np.zeros(self.size)
+        self.history = []
 
     def print_matrix(self):
         print(self.matrix)
@@ -54,28 +55,6 @@ class Simulator:
         i = math.floor(self.n/2)
         self.matrix[i][i] = 1
 
-    def flower_0(self):
-        next = np.copy(self.matrix)
-        next += np.roll(self.matrix, 1, axis=0)
-        next += np.roll(self.matrix, 1, axis=1)
-        next += np.roll(self.matrix, -1, axis=0)
-        next += np.roll(self.matrix, -1, axis=1)
-        #next += np.roll(self.matrix, -1, axis=(0,1))
-        #next += np.roll(self.matrix, 1, axis=(0,1))
 
-        self.matrix = next
-        self.matrix %= 4
-        return self.matrix
-
-    def flower(self):
-        next = np.copy(self.matrix)
-        next += np.roll(self.matrix, 1, axis=0) % 2
-        next += np.roll(self.matrix, 1, axis=1) % 2
-        next += np.roll(self.matrix, -1, axis=0) % 2
-        next += np.roll(self.matrix, -1, axis=1) % 2
-        #next += np.roll(self.matrix, -1, axis=(0,1))
-        #next += np.roll(self.matrix, 1, axis=(0,1))
-
-        self.matrix = next
-        self.matrix %= 30
-        return self.matrix
+    def record_instance(self):
+        self.history.append(self.matrix)

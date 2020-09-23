@@ -176,75 +176,6 @@ def bounce():
 
     app.mainloop()
 
-
-
-def electro():
-    root = tk.Tk()
-    height = 1080
-    width = 1920
-    framerate=30
-
-    # arbitrary Coulomb's constant
-    k = 3
-
-    app = GraphicsCanvas(master=root, height=height, width=width, bg="black")
-
-    particles = []
-
-    for i in range(1):
-        xi = app.canvasx(width / 2 + random.randint(-100,100))
-        yi = app.canvasy(height / 2 + random.randint(-100,100))
-        dxi = random.randint(-1,1)
-        dyi = random.randint(-1,1)
-        r = random.randint(5,10)
-        density = 100000000
-        mass = (density * 4) / (3 * 3.141 * r**3)
-
-        if i % 2 == 0:
-            proton = Particle(app, xi, yi, r, dxi, dyi, mass=mass, color="red", charge=100 * r)
-            particles.append(proton)
-        else:
-            electron = Particle(app, xi, yi, r, dxi, dyi, mass=mass, color="blue", charge=-100 * r)
-            particles.append(electron)
-
-
-    while True:
-        root.update()
-        for particle in particles:
-            particle.constrain()
-            particle.animation_step()
-            particle.trail()
-
-            if particle.x > width or particle.x < 0 or particle.y > height or particle.y < 0:
-                particles.remove(particle)
-
-            for p in particles:
-                if p != particle:
-                    # hashtag trig
-                    delta_y = particle.y - p.y
-                    delta_x = particle.x - p.x
-                    radius = math.sqrt(delta_x**2 + delta_y**2)
-
-                    # scale factor
-                    alpha = 0.01
-
-                    # apply coulomb's law
-                    if radius != 0:
-
-                        if delta_x != 0:
-                            theta = math.atan(delta_y/delta_x)
-
-                        force = (particle.charge * p.charge * k) / (radius*alpha)**2
-                        a_x = (force * math.cos(theta)) / particle.mass
-                        a_y = (force * math.sin(theta)) / particle.mass
-                        particle.dx += a_x
-                        particle.dy += a_y
-                    else:
-                        particle.dx = 0
-                        particle.dy = 0
-
-        app.mainloop()
-
 def collider():
     engine = Engine(framerate=15)
     print(engine.width)
@@ -328,27 +259,91 @@ def collider():
 
         engine.update()
 
-def click(event):
-    x, y = event.x, event.y
-    print(x, y)
+
+def right_click(event):
+    particles.append(Particle(engine.canvas, event.x, event.y, 3, 0, 0, color="blue", charge=-1e9, mass=1e20))
+    engine.update()
+
+def left_click(event):
+    particles.append(Particle(engine.canvas, event.x, event.y, 3, 0, 0, color="red", charge=1e9, mass=1e20))
+    engine.update()
 
 
-def test():
-    engine = Engine(width=3160, height=2160, framerate=15)
+def coulomb(particles):
+    k = 1e5
+    visited = []
+
+    for particle in particles:
+        particle.constrain()
+
+        for p in particles:
+
+            if p != particle and (particle, p) not in visited and (p, particle) not in visited:
+                visited.append((particle, p))
+                # hashtag trig
+                delta_y = particle.y - p.y
+                delta_x = particle.x - p.x
+                radius = math.sqrt(delta_x**2 + delta_y**2)
+
+                # apply coulomb's law
+                if radius != 0:
+                    if delta_x == 0:
+                        theta = 0
+                    else:
+                        theta = math.atan(delta_y/delta_x)
+
+                    force = (particle.charge * p.charge * k) / radius**2
+
+                    #if p in visited:
+                    #    force = -force
+
+                    a_x = (force * math.cos(theta)) / particle.mass
+                    a_y = (force * math.sin(theta)) / particle.mass
+
+
+                    # inverse angle
+                    theta = theta - math.radians(1)
+
+                    a_x = (force * math.cos(theta)) / p.mass
+                    a_y = (force * math.sin(theta)) / p.mass
+
+                    # handle positive and negative charges
+
+                    # negative
+                    if (p.charge * particle.charge) < 0:
+                        p.dx += a_x
+                        p.dy += a_y
+                        particle.dx -= a_x
+                        particle.dy -= a_y
+                    else:
+                        p.dx += a_x
+                        p.dy += a_y
+                        particle.dx -= a_x
+                        particle.dy -= a_y
+
+
+                else:
+                    particle.dx = 0
+                    particle.dy = 0
+
+        visited.append(particle)
+
+    return particles
+
+
+def electro(particles):
     print(engine.width)
     color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
     k = 10
     #engine.window.bind('<Motion>', click)
     #engine.window.mainloop()
 
-    particles = []
-
     engine.update()
 
     i = 0
     while True:
         i += 1
-        if i % 5 == 0 and i < 150:
+        if i % 2 == 0 and i < 32:
             xi = (engine.width / 3 + random.randint(-100,100))
             yi = (engine.height / 2 + random.randint(-100,100))
             dxi = 0
@@ -358,7 +353,7 @@ def test():
             electron = Particle(engine.canvas, xi, yi, r, dxi, dyi, color="blue", charge=-1e9, mass=1e20)
             particles.append(electron)
 
-        if i % 5 == 0 and i < 150:
+        if i % 2 == 0 and i < 32:
             xi = (2 * engine.width / 3 + random.randint(-100,100))
             yi = (engine.height / 2 + random.randint(-100,100))
             dxi = 0
@@ -368,41 +363,38 @@ def test():
             proton = Particle(engine.canvas, xi, yi, r, dxi, dyi, color="red", charge=1e9, mass=1e20)
             particles.append(proton)
 
+        particles = coulomb(particles)
         for particle in particles:
-            particle.constrain()
-            particle.trail()
-
-            for p in particles:
-                if p != particle:
-                    # hashtag trig
-                    delta_y = particle.y - p.y
-                    delta_x = particle.x - p.x
-                    radius = math.sqrt(delta_x**2 + delta_y**2)
-
-                    # scale factor
-
-                    # apply coulomb's law
-                    if radius != 0:
-
-                        if delta_x != 0:
-                            theta = math.atan(delta_y/delta_x)
-
-                        force = (particle.charge * p.charge * k) / radius**2
-                        a_x = (force * math.cos(theta)) / particle.mass
-                        a_y = (force * math.sin(theta)) / particle.mass
-                        particle.dx += a_x
-                        particle.dy += a_y
-                    else:
-                        particle.dx = 0
-                        particle.dy = 0
-
-
-            for particle in particles:
-                particle.step()
-
-
+            particle.step()
 
         engine.update()
 
+def test(particles):
+    print(engine.width)
+    color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
+
+    engine.update()
+
+    #electron = Particle(engine.canvas, 500, 100, 10, 0, 1, color="blue", charge=-1e9, mass=1e20)
+    #particles.append(electron)
+
+    #proton = Particle(engine.canvas, 520, 150, 10, 0, 0, color="red", charge=1e9, mass=1e20)
+    #particles.append(proton)
+
+    while True:
+        particles = coulomb(particles)
+
+        for particle in particles:
+            particle.step()
+
+        engine.update()
+
+
 if __name__=="__main__":
-    test()
+    engine = Engine(width=1080, height=1080, framerate=15)
+    engine.window.bind("<Button-1>", right_click)
+    engine.window.bind("<Button-3>", left_click)
+    engine.canvas.pack()
+
+    particles = []
+    test(particles)
