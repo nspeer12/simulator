@@ -5,7 +5,7 @@ Implemented in `numpy` and visualized using `tkinter`
 
 Visualize physical phenomenom at a macro and micro level. See concepts such as Newton's law affect particles at a macro level, and charged particles interact on an atomic level.
 
-
+*Note: I made this at 4 a.m. so please excuse any issues. Feel free to contribute or report any issues.*
 
 ## How to Run
 
