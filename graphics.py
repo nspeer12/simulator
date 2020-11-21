@@ -1,6 +1,5 @@
 import tkinter as tk
 import time
-from ursina import *
 import random
 import math
 from datetime import datetime

@@ -58,3 +58,126 @@ class Simulator:
 
     def record_instance(self):
         self.history.append(self.matrix)
+
+
+def update(i, show=False, save=True):
+    sim.flower()
+
+    frame = ax.matshow(sim.matrix)
+    fig.canvas.flush_events()
+
+    if save:
+        fig.savefig(img_dir + "matrix_" + str(i) + ".png")
+
+
+def animation():
+    sim = Simulator(n=240)
+    sim.seed_center()
+    fig, ax = plt.subplots(figsize=(10,10))
+    plt.axis("off")
+    frame = ax.matshow(sim.matrix)
+    animation = FuncAnimation(fig, update, interval=500, save_count=50)
+    plt.show()
+
+def update_history(i, show=False, save=False):
+    matrix = sim.history[i]
+
+    im.set_data(matrix)
+    #im = ax.matshow(matrix)
+    #fig.canvas.flush_events()
+
+    if save:
+        plt.savefig(img_dir + "matrix_" + str(i) + ".png")
+
+    return im
+
+def animate_history(sim, frames):
+    animation = FuncAnimation(fig, update_history, interval=500, save_count=50, frames=frames)
+
+    Writer = matplotlib.animation.writers["ffmpeg"]
+    writer = Writer(fps=15, bitrate=1800)
+    animation.save("game_of_life.mp4", writer=writer)
+    plt.show()
+
+def flower_0(sim):
+    next = np.copy(sim.matrix)
+    next += np.roll(sim.matrix, 1, axis=0)
+    next += np.roll(sim.matrix, 1, axis=1)
+    next += np.roll(sim.matrix, -1, axis=0)
+    next += np.roll(sim.matrix, -1, axis=1)
+    #next += np.roll(sim.matrix, -1, axis=(0,1))
+    #next += np.roll(sim.matrix, 1, axis=(0,1))
+    sim.matrix = next
+    sim.matrix %= 4
+    sim.record_instance()
+    return sim.matrix
+
+def snowflake(sim):
+    next = np.copy(sim.matrix)
+    next += np.roll(sim.matrix, 1, axis=0) % 2
+    next += np.roll(sim.matrix, 1, axis=1) % 2
+    next += np.roll(sim.matrix, -1, axis=0) % 2
+    next += np.roll(sim.matrix, -1, axis=1) % 2
+    next += np.roll(sim.matrix, -1, axis=(0,1))
+    next += np.roll(sim.matrix, 1, axis=(0,1))
+    next %= 30
+
+    return next
+
+def game_of_life(sim):
+
+    n = sim.n
+    matrix = sim.matrix
+
+    for j in range(n):
+        for i in range(n):
+            neighbors = 0
+            # up
+            if i > 0:
+                neighbors += matrix[i-1][j]
+
+            # up & right
+            if i > 0 and j < n-1:
+                neighbors += matrix[i-1][j+1]
+
+            # right
+            if j < n-1:
+                neighbors += matrix[i][j+1]
+
+            # down & right
+            if j < n-1 and i < n-1:
+                neighbors += matrix[i+1][j+1]
+
+            # down
+            if i > n-1:
+                neighbors += matrix[i+1][j]
+
+            # down & left
+            if i < n-1 and j > 0:
+                neighbors += matrix[i+1][j-1]
+
+            # left
+            if j > 0:
+                neighbors += matrix[i][j-1]
+
+            # left & up
+            if j > 0 and i > 0:
+                neighbors += matrix[i-1][j-1]
+
+            # update state
+
+            # not enough neighbors
+            if neighbors < 2:
+                matrix[i][j] = 0
+
+            # too many neighbors
+            if neighbors > 3:
+                matrix[i][j] = 0
+
+            # new cell
+            if neighbors == 3:
+                matrix[i][j] = 1
+
+    return matrix
+
+

@@ -7,6 +7,7 @@ import numpy as np
 import cv2
 import time
 import os
+import sys
 import tkinter as tk
 from datetime import datetime
 from random import random
@@ -18,158 +19,29 @@ random.seed(datetime.now())
 
 img_dir = "imgs/"
 
-def update(i, show=False, save=True):
-    sim.flower()
 
-    frame = ax.matshow(sim.matrix)
-    fig.canvas.flush_events()
-
-    if save:
-        fig.savefig(img_dir + "matrix_" + str(i) + ".png")
-
-
-def animation():
-    sim = Simulator(n=240)
-    sim.seed_center()
-    fig, ax = plt.subplots(figsize=(10,10))
-    plt.axis("off")
-    frame = ax.matshow(sim.matrix)
-    animation = FuncAnimation(fig, update, interval=500, save_count=50)
-    plt.show()
-
-def update_history(i, show=False, save=False):
-    matrix = sim.history[i]
-
-    im.set_data(matrix)
-    #im = ax.matshow(matrix)
-    #fig.canvas.flush_events()
-
-    if save:
-        plt.savefig(img_dir + "matrix_" + str(i) + ".png")
-
-    return im
-
-def animate_history(sim, frames):
-    animation = FuncAnimation(fig, update_history, interval=500, save_count=50, frames=frames)
-
-    Writer = matplotlib.animation.writers["ffmpeg"]
-    writer = Writer(fps=15, bitrate=1800)
-    animation.save("game_of_life.mp4", writer=writer)
-    plt.show()
-
-def flower_0(sim):
-    next = np.copy(sim.matrix)
-    next += np.roll(sim.matrix, 1, axis=0)
-    next += np.roll(sim.matrix, 1, axis=1)
-    next += np.roll(sim.matrix, -1, axis=0)
-    next += np.roll(sim.matrix, -1, axis=1)
-    #next += np.roll(sim.matrix, -1, axis=(0,1))
-    #next += np.roll(sim.matrix, 1, axis=(0,1))
-    sim.matrix = next
-    sim.matrix %= 4
-    sim.record_instance()
-    return sim.matrix
-
-def snowflake(sim):
-    next = np.copy(sim.matrix)
-    next += np.roll(sim.matrix, 1, axis=0) % 2
-    next += np.roll(sim.matrix, 1, axis=1) % 2
-    next += np.roll(sim.matrix, -1, axis=0) % 2
-    next += np.roll(sim.matrix, -1, axis=1) % 2
-    next += np.roll(sim.matrix, -1, axis=(0,1))
-    next += np.roll(sim.matrix, 1, axis=(0,1))
-    next %= 30
-
-    return next
-
-def game_of_life(sim):
-
-    n = sim.n
-    matrix = sim.matrix
-
-    for j in range(n):
-        for i in range(n):
-            neighbors = 0
-            # up
-            if i > 0:
-                neighbors += matrix[i-1][j]
-
-            # up & right
-            if i > 0 and j < n-1:
-                neighbors += matrix[i-1][j+1]
-
-            # right
-            if j < n-1:
-                neighbors += matrix[i][j+1]
-
-            # down & right
-            if j < n-1 and i < n-1:
-                neighbors += matrix[i+1][j+1]
-
-            # down
-            if i > n-1:
-                neighbors += matrix[i+1][j]
-
-            # down & left
-            if i < n-1 and j > 0:
-                neighbors += matrix[i+1][j-1]
-
-            # left
-            if j > 0:
-                neighbors += matrix[i][j-1]
-
-            # left & up
-            if j > 0 and i > 0:
-                neighbors += matrix[i-1][j-1]
-
-            # update state
-
-            # not enough neighbors
-            if neighbors < 2:
-                matrix[i][j] = 0
-
-            # too many neighbors
-            if neighbors > 3:
-                matrix[i][j] = 0
-
-            # new cell
-            if neighbors == 3:
-                matrix[i][j] = 1
-
-    return matrix
-
-def bounce():
-    height = 1000
-    width = 1000
-    framerate=60
-
-    app = GraphicsCanvas(master=root, height=height, width=width, bg="black")
+def bounce(particles):
     color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
 
-    particles = []
-
     for i in range(100):
-        xi = width / 2
-        yi = width / 2
+        xi = engine.width / 2
+        yi = engine.width / 2
         dxi = random.randint(-10, 10) * random.random()
         dyi = random.randint(-10, 10) * random.random()
         r = random.randint(0,5)
 
-        ball = Particle(app, xi, yi, r, dxi, dyi, color=random.choice(color), charge=-10)
+        ball = Particle(engine.canvas, xi, yi, r, dxi, dyi, color=random.choice(color), charge=-10)
         particles.append(ball)
 
 
     while True:
         for particle in particles:
             particle.dy += 0.1
-            particle.animation_step()
+            particle.step()
             particle.constrain()
-
-        root.update()
-        time.sleep(1/framerate)
-
-    app.mainloop()
-
+       
+        engine.update()
+       
 def collider(particles):
     color = ["white", "green", "yellow", "red", "blue", "orange", "pink"]
     k = 2
@@ -391,11 +263,39 @@ def test(particles):
 
 
 if __name__=="__main__":
-    engine = Engine(width=1080, height=1080, framerate=15)
-    engine.window.bind("<Button-1>", right_click)
-    engine.window.bind("<Button-3>", left_click)
-    engine.canvas.pack()
+    
+    print('         _                 __      __            ')
+    print('   _____(_)___ ___  __  __/ /___ _/ /_____  _____')
+    print('  / ___/ / __ `__ \/ / / / / __ `/ __/ __ \/ ___/')
+    print(' (__  ) / / / / / / /_/ / / /_/ / /_/ /_/ / /    ')
+    print('/____/_/_/ /_/ /_/\__,_/_/\__,_/\__/\____/_/     ')
+    print()
 
-    num_threads = 16
-    particles = []
-    test(particles)
+    if len(sys.argv) > 1:
+        if '-h' in sys.argv or '--help' in sys.argv or len(sys.argv) == 1:
+            print('Usage:')
+            print('help menu: -h or --help')
+            print('try demos: --demo <1-3>')
+        elif '--demo' in sys.argv:
+            try:
+                index = sys.argv.index('--demo')
+            except:
+                pass
+            else:
+                if index:
+                    demo = sys.argv[index+1]
+                    print(demo)
+                    engine = Engine(width=500, height=500, framerate=15)
+                    engine.window.bind("<Button-1>", right_click)
+                    engine.window.bind("<Button-3>", left_click)
+                    engine.canvas.pack()
+                    num_threads = 16
+                    particles = []
+             
+                    if demo == "1":
+                        electro(particles)
+                    elif demo == "2":
+                        bounce(particles)
+                    elif demo == "3":
+                        test(particles)
+     
