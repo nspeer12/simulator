@@ -18,7 +18,22 @@ To try out some demos run `python main.py --demo <1-3>`
 
 The Graphics class is a wrapper on `tk.Tk()` that allows for real-time visualization of the simulator. The graphics engine draws, updates, and displays what's going on in the simulator.
 
+#### Bouncy Balls
+
+Watch gravity come to life as it pulls down on balls of different shapes and sizes
+
 <img style="height:250px; width:250px;" src="renders/bounce.gif">
+
+#### Coulomb's Law
+
+Visualize charged particles interacting in an electric field
+
+<img style="height:250px; width:250px;" src="renders/coulomb.gif">
+
+
+#### Click to add more particles
+
+<img style="height:250px; width:250px;" src="renders/click.gif">
 
 ### Particle
 
